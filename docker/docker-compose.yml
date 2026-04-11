@@ -1,0 +1,71 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://edu_user:edu_pass@db:5432/coding_edu
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: edu_user
+      POSTGRES_PASSWORD: edu_pass
+      POSTGRES_DB: coding_edu
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U edu_user -d coding_edu']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Judge0 - 코드 실행 엔진
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    ports:
+      - '2358:2358'
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-worker:
+    image: judge0/judge0:1.13.1
+    command: ['./scripts/workers']
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-db:
+    image: postgres:13.0
+    environment:
+      POSTGRES_PASSWORD: YourSecretPassword1234
+    restart: unless-stopped
+
+  judge0-redis:
+    image: redis:6.0
+    command: ['redis-server', '--appendonly', 'yes']
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
