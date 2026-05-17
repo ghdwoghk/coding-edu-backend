@@ -14,26 +14,21 @@ export const codingRoutes = async (fastify) => {
 
   // 코드 실행 (채점 없이 샘플 테스트케이스만)
   fastify.post('/run', {
-    preHandler: authenticate,
     schema: { tags: ['Coding'], body: codeBody },
   }, async (req) => {
-    return codingService.runCode(req.user.id, req.body);
+    return codingService.runCode('anonymous', req.body);
   });
-
   // 코드 제출 (전체 채점)
   fastify.post('/submit', {
-    preHandler: authenticate,
     schema: { tags: ['Coding'], body: codeBody },
   }, async (req, reply) => {
-    const result = await codingService.submitCode(req.user.id, req.body);
+    const result = await codingService.submitCode('anonymous', req.body);
     return reply.status(201).send(result);
   });
-
   // 제출 이력
   fastify.get('/submissions/:problemId', {
-    preHandler: authenticate,
     schema: { tags: ['Coding'] },
   }, async (req) => {
-    return codingService.getSubmissions(req.user.id, req.params.problemId);
+    return codingService.getSubmissions('anonymous', req.params.problemId);
   });
 };
