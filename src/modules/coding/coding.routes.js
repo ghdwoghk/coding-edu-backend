@@ -12,28 +12,45 @@ export const codingRoutes = async (fastify) => {
     },
   };
 
+  const runCustomBody = {
+    type: 'object',
+    required: ['code', 'language'],
+    properties: {
+      code: { type: 'string' },
+      language: { type: 'string', enum: ['javascript', 'python', 'java', 'cpp', 'c', 'typescript', 'go', 'rust'] },
+      stdin: { type: 'string' },
+    },
+  };
+
   // 코드 실행 (채점 없이 샘플 테스트케이스만)
   fastify.post('/run', {
-    preHandler: authenticate,
+    // preHandler: authenticate,
     schema: { tags: ['Coding'], body: codeBody },
   }, async (req) => {
-    return codingService.runCode(req.user.id, req.body);
+    return codingService.runCode('anonymous', req.body);
+  });
+
+  // 커스텀 stdin으로 코드 실행 (사용자 입력값 직접 사용)
+  fastify.post('/run-custom', {
+    schema: { tags: ['Coding'], body: runCustomBody },
+  }, async (req) => {
+    return codingService.runCodeCustom('anonymous', req.body);
   });
 
   // 코드 제출 (전체 채점)
   fastify.post('/submit', {
-    preHandler: authenticate,
+    // preHandler: authenticate,
     schema: { tags: ['Coding'], body: codeBody },
   }, async (req, reply) => {
-    const result = await codingService.submitCode(req.user.id, req.body);
+    const result = await codingService.submitCode('anonymous', req.body);
     return reply.status(201).send(result);
   });
 
   // 제출 이력
   fastify.get('/submissions/:problemId', {
-    preHandler: authenticate,
+    // preHandler: authenticate,
     schema: { tags: ['Coding'] },
   }, async (req) => {
-    return codingService.getSubmissions(req.user.id, req.params.problemId);
+    return codingService.getSubmissions('anonymous', req.params.problemId);
   });
 };

@@ -32,6 +32,26 @@ const executeCode = async (code, language, stdin = '') => {
   return submitRes.data;
 };
 
+export const runCodeCustom = async (userId, { code, language, stdin }) => {
+  try {
+    const result = await executeCode(code, language, stdin || '');
+    return {
+      results: [{
+        input: stdin || '',
+        expected: '',
+        actual: (result.stdout ?? '').trim(),
+        passed: null,
+        status: result.status?.description,
+        time: result.time,
+        memory: result.memory,
+      }],
+      allPassed: null,
+    };
+  } catch (error) {
+    throw { statusCode: 500, message: '코드 실행 중 오류가 발생했습니다.', detail: error.message };
+  }
+};
+
 export const runCode = async (userId, { problemId, code, language }) => {
   const problem = await prisma.codingProblem.findUnique({
     where: { id: problemId },
